@@ -1,0 +1,103 @@
+services:
+  keycloak1-db:
+    image: postgres:13
+    container_name: keycloak1-db
+    environment:
+      POSTGRES_DB: keycloak1
+      POSTGRES_USER: keycloak_user1
+      POSTGRES_PASSWORD: ED1FTMcflyTsj
+    volumes:
+      - ./data/kcdb1/:/var/lib/postgresql/data
+    networks:
+      - keycloak1-network
+
+  keycloak2-db:
+    image: postgres:13
+    container_name: keycloak2-db
+    environment:
+      POSTGRES_DB: keycloak2
+      POSTGRES_USER: keycloak_user2
+      POSTGRES_PASSWORD: BEQp1OIKTojkp
+    volumes:
+      - ./data/kcdb2/:/var/lib/postgresql/data
+    networks:
+      - keycloak2-network
+
+  keycloak1:
+    image: quay.io/keycloak/keycloak:18.0.2 
+    container_name: keycloak1
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak1-db/keycloak1
+      KC_DB_USERNAME: keycloak_user1
+      KC_DB_PASSWORD: ED1FTMcflyTsj
+      KC_HOSTNAME: keycloak1
+      PROXY_ADDRESS_FORWARDING: true
+      KC_HTTP_ENABLED: true
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    networks:
+      - keycloak1-network
+      - proxy-network
+    command: start-dev
+    depends_on:
+      - keycloak1-db
+
+  keycloak2:
+    image: quay.io/keycloak/keycloak:18.0.2 
+    container_name: keycloak2
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak2-db/keycloak2
+      KC_DB_USERNAME: keycloak_user2
+      KC_DB_PASSWORD: BEQp1OIKTojkp
+      KC_HOSTNAME: keycloak2
+      PROXY_ADDRESS_FORWARDING: true
+      KC_HTTP_ENABLED: true
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    networks:
+      - keycloak2-network
+      - proxy-network
+    command: start-dev
+    depends_on:
+      - keycloak2-db
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_proxy
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - proxy-network
+      - keycloak1-network
+      - keycloak2-network
+
+  # aduneoclientfedid:
+  #   build:
+  #       context: .
+  #   container_name: aduneoclientfedid
+  #   ports:
+  #     - "443:443"
+  #   networks:
+  #     - mynet
+      
+  # postgres:
+  #   image: postgres:15.3
+  #   container_name: postgres
+  #   environment:
+  #     - POSTGRES_DB=keycloak
+  #     - POSTGRES_USER=keycloak
+  #     - POSTGRES_PASSWORD=password
+  #   healthcheck:
+  #     test: "pg_isready -U postgres"
+  #   networks:
+  #     - mynet
+
+networks:
+  keycloak1-network:
+  keycloak2-network:
+  proxy-network:

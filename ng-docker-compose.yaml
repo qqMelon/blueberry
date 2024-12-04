@@ -1,0 +1,82 @@
+services:
+  keycloak1-ng-db:
+    image: postgres:13
+    container_name: keycloak1-ng-db
+    environment:
+      POSTGRES_DB: keycloak1-ng
+      POSTGRES_USER: keycloak_user1
+      POSTGRES_PASSWORD: ED1FTMcflyTsj
+    volumes:
+      - ./data/kcdb1/:/var/lib/postgresql/data
+    networks:
+      - keycloak1-ng-network
+
+  keycloak2-ng-db:
+    image: postgres:13
+    container_name: keycloak2-ng-db
+    environment:
+      POSTGRES_DB: keycloak2-ng
+      POSTGRES_USER: keycloak_user2
+      POSTGRES_PASSWORD: BEQp1OIKTojkp
+    volumes:
+      - ./data/kcdb2/:/var/lib/postgresql/data
+    networks:
+      - keycloak2-ng-network
+
+  keycloak1-ng:
+    image: quay.io/keycloak/keycloak:18.0.2 
+    container_name: keycloak1-ng
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak1-ng-db/keycloak1
+      KC_DB_USERNAME: keycloak_user1
+      KC_DB_PASSWORD: ED1FTMcflyTsj
+      KC_HOSTNAME: keycloak1-ng
+      PROXY_ADDRESS_FORWARDING: true
+      KC_HTTP_ENABLED: true
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    networks:
+      - keycloak1-ng-network
+      - proxy-ng-network
+    command: start-dev
+    depends_on:
+      - keycloak1-ng-db
+
+  keycloak2-ng:
+    image: quay.io/keycloak/keycloak:18.0.2 
+    container_name: keycloak2-ng
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak2-ng-db/keycloak2
+      KC_DB_USERNAME: keycloak_user2
+      KC_DB_PASSWORD: BEQp1OIKTojkp
+      KC_HOSTNAME: keycloak2-ng
+      PROXY_ADDRESS_FORWARDING: true
+      KC_HTTP_ENABLED: true
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    networks:
+      - keycloak2-ng-network
+      - proxy-ng-network
+    command: start-dev
+    depends_on:
+      - keycloak2-ng-db
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_proxy
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - proxy-ng-network
+      - keycloak1-ng-network
+      - keycloak2-ng-network
+
+networks:
+  keycloak1-ng-network:
+  keycloak2-ng-network:
+  proxy-ng-network:
