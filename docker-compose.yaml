@@ -31,7 +31,7 @@ services:
       KC_DB_URL: jdbc:postgresql://keycloak1-db/keycloak1
       KC_DB_USERNAME: keycloak_user1
       KC_DB_PASSWORD: ED1FTMcflyTsj
-      KC_HOSTNAME: keycloak1
+      KC_HOSTNAME: keycloak1.example.com
       PROXY_ADDRESS_FORWARDING: true
       KC_HTTP_ENABLED: true
       KEYCLOAK_ADMIN: admin
@@ -51,7 +51,7 @@ services:
       KC_DB_URL: jdbc:postgresql://keycloak2-db/keycloak2
       KC_DB_USERNAME: keycloak_user2
       KC_DB_PASSWORD: BEQp1OIKTojkp
-      KC_HOSTNAME: keycloak2
+      KC_HOSTNAME: keycloak2.example.com
       PROXY_ADDRESS_FORWARDING: true
       KC_HTTP_ENABLED: true
       KEYCLOAK_ADMIN: admin
@@ -70,34 +70,19 @@ services:
       - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
       - "80:80"
-      - "443:443"
     networks:
       - proxy-network
       - keycloak1-network
       - keycloak2-network
 
-  # aduneoclientfedid:
-  #   build:
-  #       context: .
-  #   container_name: aduneoclientfedid
-  #   ports:
-  #     - "443:443"
-  #   networks:
-  #     - mynet
-      
-  # postgres:
-  #   image: postgres:15.3
-  #   container_name: postgres
-  #   environment:
-  #     - POSTGRES_DB=keycloak
-  #     - POSTGRES_USER=keycloak
-  #     - POSTGRES_PASSWORD=password
-  #   healthcheck:
-  #     test: "pg_isready -U postgres"
-  #   networks:
-  #     - mynet
+  aduneoclientfedid:
+    image: gpozniakaduneo/client-fed-id:http80
+    container_name: aduneoclientfedid
+    ports:
+      - "8001:80"
 
 networks:
   keycloak1-network:
   keycloak2-network:
   proxy-network:
+
