@@ -9,7 +9,49 @@ services:
     volumes:
       - ./data/kcdb1/:/var/lib/postgresql/data
     networks:
-      - keycloak1-network
+      - zone1-network
+
+  keycloak1:
+    image: quay.io/keycloak/keycloak:18.0.2 
+    container_name: keycloak1
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak1-db/keycloak1
+      KC_DB_USERNAME: keycloak_user1
+      KC_DB_PASSWORD: ED1FTMcflyTsj
+      # KC_HOSTNAME: keycloak1.zone1.example.com
+      PROXY_ADDRESS_FORWARDING: true
+      KC_HOSTNAME_STRICT: false
+      KC_HTTP_ENABLED: true
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    networks:
+      - zone1-network
+    command: start-dev
+    depends_on:
+      - keycloak1-db
+
+  aduneo-zone1:
+    image: gpozniakaduneo/client-fed-id:http80
+    container_name: aduneo-zone1
+    volumes:
+      - ./config/aduneoconf-zone1:/usr/src/app/conf
+    networks:
+      - zone1-network
+
+  nginx-zone1:
+    image: nginx:latest
+    container_name: nginx_zone1
+    volumes:
+      - ./config/zone1/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - nginx-network
+      - zone1-network
+    ports:
+      - "8000:8000"
+    depends_on:
+      - keycloak1
+      - aduneo-zone1
 
   keycloak2-db:
     image: postgres:13
@@ -21,27 +63,8 @@ services:
     volumes:
       - ./data/kcdb2/:/var/lib/postgresql/data
     networks:
-      - keycloak2-network
+      - zone2-network
 
-  keycloak1:
-    image: quay.io/keycloak/keycloak:18.0.2 
-    container_name: keycloak1
-    environment:
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://keycloak1-db/keycloak1
-      KC_DB_USERNAME: keycloak_user1
-      KC_DB_PASSWORD: ED1FTMcflyTsj
-      KC_HOSTNAME: keycloak1.example.com
-      PROXY_ADDRESS_FORWARDING: true
-      KC_HTTP_ENABLED: true
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-    networks:
-      - keycloak1-network
-      - proxy-network
-    command: start-dev
-    depends_on:
-      - keycloak1-db
 
   keycloak2:
     image: quay.io/keycloak/keycloak:18.0.2 
@@ -51,38 +74,53 @@ services:
       KC_DB_URL: jdbc:postgresql://keycloak2-db/keycloak2
       KC_DB_USERNAME: keycloak_user2
       KC_DB_PASSWORD: BEQp1OIKTojkp
-      KC_HOSTNAME: keycloak2.example.com
+      # KC_HOSTNAME: keycloak2.zone2.example.com
+      KC_HOSTNAME_STRICT: false
       PROXY_ADDRESS_FORWARDING: true
       KC_HTTP_ENABLED: true
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
     networks:
-      - keycloak2-network
-      - proxy-network
+      - zone2-network
     command: start-dev
     depends_on:
       - keycloak2-db
+  
+  aduneo-zone2:
+    image: gpozniakaduneo/client-fed-id:http80
+    container_name: aduneo-zone2
+    volumes:
+      - ./config/aduneoconf-zone2:/usr/src/app/conf
+    networks:
+      - zone2-network
 
-  nginx:
+  nginx-zone2:
     image: nginx:latest
-    container_name: nginx_proxy
+    container_name: nginx_zone2
+    volumes:
+      - ./config/zone2/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - nginx-network
+      - zone2-network
+    depends_on:
+      - keycloak2
+      - aduneo-zone2
+
+  nginx-main:
+    image: nginx:latest
+    container_name: nginx_main
     volumes:
       - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
-    ports:
-      - "80:80"
     networks:
-      - proxy-network
-      - keycloak1-network
-      - keycloak2-network
+      - nginx-network
+      - zone1-network
+      - zone2-network
+    depends_on:
+      - nginx-zone1
+      - nginx-zone2
 
-  aduneoclientfedid:
-    image: gpozniakaduneo/client-fed-id:http80
-    container_name: aduneoclientfedid
-    ports:
-      - "8001:80"
 
 networks:
-  keycloak1-network:
-  keycloak2-network:
-  proxy-network:
-
+  zone1-network:
+  zone2-network:
+  nginx-network:
